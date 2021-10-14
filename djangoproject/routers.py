@@ -1,8 +1,7 @@
-from django.db import router
-from rest_framework import routers
-from news.views import NewsSerializers
+from rest_framework.routers import SimpleRouter
+from news.views import NewsViewSet
 
 
-router = routers.SimpleRouter()
-router.register('news', NewsSerializers, basename='news')
+router = SimpleRouter()
+router.register('news', NewsViewSet, basename='news')
 

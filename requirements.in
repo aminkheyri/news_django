@@ -1,3 +1,6 @@
 django
 celery
 djangorestframework
+psycopg2
+xmltodict
+beautifulsoup4
