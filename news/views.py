@@ -1,8 +1,8 @@
 from rest_framework.viewsets import ModelViewSet
-from .models import News
+from .models import NewsCeleryTasks
 from .serializer import NewsSerializers
 
 
 class NewsViewSet(ModelViewSet):
-    queryset = News.objects.all()
+    queryset = NewsCeleryTasks.objects.all()
     serializer_class = NewsSerializers

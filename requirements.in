@@ -4,3 +4,4 @@ djangorestframework
 psycopg2
 xmltodict
 beautifulsoup4
+redis
