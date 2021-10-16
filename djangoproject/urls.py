@@ -9,4 +9,5 @@ from .routers import router
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include(router.urls)),
+    path('test/', include('news.urls', namespace='test'))
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
