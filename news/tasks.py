@@ -1,13 +1,15 @@
 from celery import shared_task
 import requests
+from requests.api import request
 import xmltodict
 import datetime
 from bs4 import BeautifulSoup
+import psycopg2
+from psycopg2.extras import execute_values
 
 
 dict_of_news = {}
 list_of_news = []
-list_of_requested_times = []
 primary_url = 'https://www.varzesh3.com/'
 url = "https://www.varzesh3.com/sitemap/news"
 result = requests.get(url)
@@ -21,8 +23,6 @@ def daterange(start_date, end_date):
 
 start_date = datetime.date(2021, 10, 13)
 end_date = datetime.date(2021, 10, 14)
-for single_date in daterange(start_date, end_date):
-    list_of_requested_times.append(single_date.strftime("%Y-%m-%d"))
 
 @shared_task
 def get_content_of_varzesh3_url(given_url):
@@ -37,13 +37,21 @@ def get_content_of_varzesh3_url(given_url):
 
 @shared_task
 def get_varzesh3_information():
-    for i in list_of_requested_times:
+    for single_date in daterange(start_date, end_date):
+        single_date = single_date.strftime("%Y-%m-%d")
         for j in range(len(data['urlset']['url'])):
-            if i == data['urlset']['url'][j]['lastmod'][0:10]:
+            if single_date == data['urlset']['url'][j]['lastmod'][0:10]:
+                dict_of_news['task_id'] = request.id
                 dict_of_news['url'] = primary_url + data['urlset']['url'][j]['loc'][:14]
                 dict_of_news['title'] = data['urlset']['url'][j]['loc'][14:]
-                dict_of_news['lastmod'] = data['urlset']['url'][j]['lastmod'][0:10]
+                dict_of_news['lastmod'] = datetime.strptime(
+                    data['urlset']['url'][j]['lastmod'][0:10], '%Y-%m-%d')
                 dict_of_news['content'] = get_content_of_varzesh3_url(primary_url + data['urlset']['url'][j]['loc'][:14])
                 list_of_news.append(dict_of_news.copy())
 
-    return list_of_news
+    columns = list_of_news[0].keys()
+    query = "INSERT INTO news_newscelerytasks ({}) VALUES %s".format(','.join(columns))
+    values = [[value for value in news.values()] for news in list_of_news]
+
+    execute_values(psycopg2.cursor, query, values)
+    psycopg2.connection.commit()
