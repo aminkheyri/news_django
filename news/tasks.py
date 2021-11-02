@@ -6,6 +6,30 @@ import datetime
 from bs4 import BeautifulSoup
 
 
+
+
+@shared_task
+def get_subtitle_of_varzesh3_url(given_url):
+    raw_url = requests.get(url=given_url)
+    content = BeautifulSoup(raw_url.text, 'html.parser')
+    subtitle = subtitle = content.find('h4', {'class': 'news-page--subtitle'})
+    if subtitle == None:
+        pass
+    else:
+        return subtitle.text
+
+
+@shared_task
+def get_lead_of_varzesh3_url(given_url):
+    raw_url = requests.get(url=given_url)
+    content = BeautifulSoup(raw_url.text, 'html.parser')
+    lead = content.find('h1', {'class': 'news-page--news-title'})
+    if lead == None:
+        pass
+    else:
+        return lead.text
+
+
 @shared_task
 def get_content_of_varzesh3_url(given_url):
     raw_url = requests.get(url=given_url)
@@ -17,9 +41,13 @@ def get_content_of_varzesh3_url(given_url):
         return final_content.text
 
 
-def paralell_tasks(crawled_date, crawled_url, crawled_content, crawled_title):
+@shared_task
+def paralell_tasks(crawled_date, crawled_url, crawled_title):
     updating_news = NewsCeleryTasks.objects.filter(url=crawled_url,
     lastmod__gte=crawled_date)
+    crawled_content=get_content_of_varzesh3_url(crawled_url)
+    crawled_subtitle = get_subtitle_of_varzesh3_url(crawled_url)
+    crawled_lead = get_lead_of_varzesh3_url(crawled_url)
     if updating_news.exists():
         updating_news.update(title=crawled_title,
         lastmod = crawled_date,
@@ -44,6 +72,5 @@ def get_varzesh3_information_task():
     for j in range(len(data['urlset']['url'])):
         paralell_tasks(crawled_date=datetime.strptime(data['urlset']['url'][j]['lastmod'], '%Y-%m-%dT%H:%M:%S%z'),
         crawled_url=primary_url + data['urlset']['url'][j]['loc'][:14],
-        crawled_content=get_content_of_varzesh3_url(primary_url + data['urlset']['url'][j]['loc'][:14]),
-        crawled_title=data['urlset']['url'][j]['loc'][14:]
+        crawled_title=data['urlset']['url'][j]['loc'][14:],
         )
